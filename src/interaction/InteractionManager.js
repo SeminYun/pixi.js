@@ -369,6 +369,7 @@ InteractionManager.prototype.processInteractive = function (point, displayObject
             if(! hit  && hitTest)
             {
                 hit = this.processInteractive(point, children[i], func, true, interactive );
+                if(hit) return;
             }
             else
             {
