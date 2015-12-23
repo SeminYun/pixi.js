@@ -151,6 +151,9 @@ function WebGLRenderer(width, height, options)
     // map some webGL blend modes..
     this._mapGlModes();
 
+    // track textures in the renderer so we can no longer listen to them on destruction.
+    this._managedTextures = [];
+
     /**
      * An array of render targets
      * @member {PIXI.RenderTarget[]}
@@ -230,6 +233,9 @@ WebGLRenderer.prototype._initContext = function ()
  */
 WebGLRenderer.prototype.render = function (object)
 {
+
+    this.emit('prerender');
+
     // no point rendering if our context has been blown up!
     if (this.gl.isContextLost())
     {
@@ -276,6 +282,8 @@ WebGLRenderer.prototype.render = function (object)
     }
 
     this.renderDisplayObject(object, this.renderTarget);//this.projection);
+
+    this.emit('postrender');
 };
 
 /**
@@ -382,6 +390,7 @@ WebGLRenderer.prototype.updateTexture = function (texture)
         texture._glTextures[gl.id] = gl.createTexture();
         texture.on('update', this.updateTexture, this);
         texture.on('dispose', this.destroyTexture, this);
+        this._managedTextures.push(texture);
     }
 
 
@@ -429,7 +438,7 @@ WebGLRenderer.prototype.updateTexture = function (texture)
  *
  * @param texture {PIXI.BaseTexture|PIXI.Texture} the texture to destroy
  */
-WebGLRenderer.prototype.destroyTexture = function (texture)
+WebGLRenderer.prototype.destroyTexture = function (texture, _skipRemove)
 {
     texture = texture.baseTexture || texture;
 
@@ -441,6 +450,15 @@ WebGLRenderer.prototype.destroyTexture = function (texture)
     if (texture._glTextures[this.gl.id])
     {
         this.gl.deleteTexture(texture._glTextures[this.gl.id]);
+        delete texture._glTextures[this.gl.id];
+
+        if (!_skipRemove)
+        {
+            var i = this._managedTextures.indexOf(texture);
+            if (i !== -1) {
+                utils.removeItems(this._managedTextures, i, 1);
+            }
+        }
     }
 };
 
@@ -464,9 +482,13 @@ WebGLRenderer.prototype.handleContextRestored = function ()
     this._initContext();
 
     // empty all the old gl textures as they are useless now
-    for (var key in utils.BaseTextureCache)
+    for (var i = 0; i < this._managedTextures.length; ++i)
     {
-        utils.BaseTextureCache[key]._glTextures.length = 0;
+        var texture = this._managedTextures[i];
+        if (texture._glTextures[this.gl.id])
+        {
+            delete texture._glTextures[this.gl.id];
+        }
     }
 };
 
@@ -483,8 +505,11 @@ WebGLRenderer.prototype.destroy = function (removeView)
     this.view.removeEventListener('webglcontextlost', this.handleContextLost);
     this.view.removeEventListener('webglcontextrestored', this.handleContextRestored);
 
-    for (var key in utils.BaseTextureCache) {
-        var texture = utils.BaseTextureCache[key];
+    // destroy managed textures
+    for (var i = 0; i < this._managedTextures.length; ++i)
+    {
+        var texture = this._managedTextures[i];
+        this.destroyTexture(texture, true);
         texture.off('update', this.updateTexture, this);
         texture.off('dispose', this.destroyTexture, this);
     }
@@ -511,6 +536,8 @@ WebGLRenderer.prototype.destroy = function (removeView)
     this.handleContextRestored = null;
 
     this._contextOptions = null;
+
+    this._managedTextures = null;
 
     this.drawCount = 0;
 
