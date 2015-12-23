@@ -346,6 +346,9 @@ Container.prototype.updateTransform = function ()
 
     for (var i = 0, j = this.children.length; i < j; ++i)
     {
+        //seminz
+        if(!this.children[i]) continue;
+        //end seminz
         this.children[i].updateTransform();
     }
 };

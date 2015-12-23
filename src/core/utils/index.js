@@ -245,5 +245,35 @@ var utils = module.exports = {
      * @todo Describe property usage
      * @private
      */
-    BaseTextureCache: {}
+    BaseTextureCache: {},
+
+
+    isObject: function (obj) {
+        return typeof obj === 'object' && !!obj && !(obj instanceof Array);
+    },
+    // mixin
+    extend: function (dest, source, force) {
+        for(var prop in source)
+        {
+            if(force)
+            {
+                dest[prop] = source[prop];
+                continue;
+            }
+            var isObj = utils.isObject(source[prop]);
+            if(!dest.hasOwnProperty(prop))
+            {
+                dest[prop] = isObj ? {} : source[prop];
+            }
+            if(isObj)
+            {
+                if(!utils.isObject(dest[prop]))
+                {
+                    dest[prop] = {};
+                }
+                extend(dest[prop], source[prop]);
+            }
+        }
+        return dest;
+    }
 };

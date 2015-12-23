@@ -37,17 +37,17 @@ TextureUvs.prototype.set = function (frame, baseFrame, rotate)
 
     if(rotate)
     {
-        this.x0 = (frame.x + frame.height) / tw;
-        this.y0 = frame.y / th;
+        this.x0 = frame.x / tw;
+        this.y0 = (frame.y + frame.width) / th;
 
-        this.x1 = (frame.x + frame.height) / tw;
-        this.y1 = (frame.y + frame.width) / th;
+        this.x1 = frame.x / tw;
+        this.y1 = frame.y / th;
 
-        this.x2 = frame.x / tw;
-        this.y2 = (frame.y + frame.width) / th;
+        this.x2 = (frame.x + frame.height) / tw;
+        this.y2 = frame.y / th;
 
-        this.x3 = frame.x / tw;
-        this.y3 = frame.y / th;
+        this.x3 = (frame.x + frame.height) / tw;
+        this.y3 = (frame.y + frame.width) / th;
     }
     else
     {
