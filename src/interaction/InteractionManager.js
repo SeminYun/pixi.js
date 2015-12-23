@@ -162,6 +162,10 @@ function InteractionManager(renderer, options)
     this.resolution = 1;
 
     this.setTargetElement(this.renderer.view, this.renderer.resolution);
+
+    //seminz
+    this.isMobile = false;
+    //by seminz
 }
 
 InteractionManager.prototype.constructor = InteractionManager;
@@ -287,7 +291,9 @@ InteractionManager.prototype.update = function (deltaTime)
 
     this.cursor = 'inherit';
 
-    this.processInteractive(this.mouse.global, this.renderer._lastObjectRendered, this.processMouseOverOut, true );
+    //seminz
+    if(!this.isMobile) this.processInteractive(this.mouse.global, this.renderer._lastObjectRendered, this.processMouseOverOut, true );
+    //end seminz
 
     if (this.currentCursorStyle !== this.cursor)
     {
@@ -354,11 +360,17 @@ InteractionManager.prototype.processInteractive = function (point, displayObject
         return false;
     }
 
+    //seminz
+    if(displayObject.interactiveCancel){
+        return false;
+    }
+    //end seminz
+
     var children = displayObject.children;
 
     var hit = false;
 
-    // if the object is interactive we must hit test all its children..
+    // if the object is interactive we must hit test seminzall its children..
     interactive = interactive || displayObject.interactive;
 
     if(displayObject.interactiveChildren)
@@ -366,11 +378,24 @@ InteractionManager.prototype.processInteractive = function (point, displayObject
 
         for (var i = children.length-1; i >= 0; i--)
         {
+
+            //seminz
+            if(children[i].interactiveCancel || !children[i].visible ){
+                continue;
+            }
+            /*
+            if(0){
+                if( func == this.processTouchStart)
+                    console.log('touch start',func,  children[i]);
+                count++;
+            }
+            */
+
             if(! hit  && hitTest)
             {
                 hit = this.processInteractive(point, children[i], func, true, interactive );
                 //by seminz
-                if(hit) return;
+                //if(hit && children[i].interactive) return;
                 //by end seminz
             }
             else
@@ -652,6 +677,9 @@ InteractionManager.prototype.processTouchStart = function ( displayObject, hit )
     if(hit)
     {
         displayObject._touchDown = true;
+        //seminz
+        displayObject._touchIdentifier = this.eventData.data.identifier;
+        //end seminz
         this.dispatchEvent( displayObject, 'touchstart', this.eventData );
     }
 };
@@ -700,23 +728,46 @@ InteractionManager.prototype.onTouchEnd = function (event)
  */
 InteractionManager.prototype.processTouchEnd = function ( displayObject, hit )
 {
-    if(hit)
-    {
-        this.dispatchEvent( displayObject, 'touchend', this.eventData );
+    if(0) {
+        if (hit) {
+            this.dispatchEvent(displayObject, 'touchend', this.eventData);
 
-        if( displayObject._touchDown )
-        {
-            displayObject._touchDown = false;
-            this.dispatchEvent( displayObject, 'tap', this.eventData );
+            if (displayObject._touchDown) {
+                displayObject._touchDown = false;
+                this.dispatchEvent(displayObject, 'tap', this.eventData);
+            }
         }
-    }
-    else
-    {
-        if( displayObject._touchDown )
-        {
-            displayObject._touchDown = false;
-            this.dispatchEvent( displayObject, 'touchendoutside', this.eventData );
+        else {
+            if (displayObject._touchDown) {
+                displayObject._touchDown = false;
+                this.dispatchEvent(displayObject, 'touchendoutside', this.eventData);
+            }
         }
+    } else {
+        //seminz
+        if(hit)
+        {
+            this.dispatchEvent( displayObject, 'touchend', this.eventData );
+
+            //seminz
+            if( displayObject._touchDown && displayObject._touchIdentifier == this.eventData.data.identifier)
+            {
+                displayObject._touchDown = false;
+                displayObject._touchIdentifier = -1;
+                this.dispatchEvent( displayObject, 'tap', this.eventData );
+            }
+        }
+        else
+        {
+            //seminz
+            if( displayObject._touchDown && displayObject._touchIdentifier == this.eventData.data.identifier)
+            {
+                displayObject._touchDown = false;
+                displayObject._touchIdentifier = -1;
+                this.dispatchEvent( displayObject, 'touchendoutside', this.eventData );
+            }
+        }
+        //end seminz
     }
 };
 
